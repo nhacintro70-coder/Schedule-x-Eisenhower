@@ -65,21 +65,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const validateKeyFormat = (key: string): { status: 'empty' | 'valid' | 'invalid_start' | 'invalid_length' | 'invalid_chars'; message: string } => {
     const trimmed = key.trim();
     if (!trimmed) {
-      return { status: 'empty', message: '💡 Key miễn phí lấy từ Google AI Studio, luôn có dạng AIzaSy... (dài đúng 39 ký tự).' };
+      return { status: 'empty', message: '💡 Key miễn phí lấy từ Google AI Studio (bắt đầu bằng AIza..., dài ~39 ký tự).' };
     }
-    if (!trimmed.startsWith('AIzaSy')) {
-      return { status: 'invalid_start', message: '❌ Sai định dạng! Gemini API Key luôn bắt đầu bằng cụm từ "AIzaSy".' };
+    if (!trimmed.toLowerCase().startsWith('aiza')) {
+      return { status: 'invalid_start', message: '❌ Sai định dạng! Gemini API Key luôn bắt đầu bằng cụm từ "AIza...".' };
     }
-    if (trimmed.length < 39) {
+    if (trimmed.length < 35) {
       return { status: 'invalid_length', message: `⚠️ Đang có ${trimmed.length}/39 ký tự (Key chuẩn dài đúng 39 ký tự, có thể bạn copy thiếu).` };
     }
-    if (trimmed.length > 39) {
-      return { status: 'invalid_length', message: `⚠️ Đang có ${trimmed.length}/39 ký tự (Key chuẩn dài 39 ký tự, có thể bạn copy thừa khoảng trắng).` };
+    if (trimmed.length > 45) {
+      return { status: 'invalid_length', message: `⚠️ Đang có ${trimmed.length} ký tự (Có thể bạn copy thừa khoảng trắng).` };
     }
-    if (!/^[A-Za-z0-9_-]{39}$/.test(trimmed)) {
-      return { status: 'invalid_chars', message: '❌ Key chứa ký tự đặc biệt không hợp lệ.' };
-    }
-    return { status: 'valid', message: '✓ Đúng định dạng chuẩn Google Gemini API Key (AIzaSy..., 39 ký tự).' };
+    return { status: 'valid', message: '✓ Đúng định dạng chuẩn Google Gemini API Key.' };
   };
 
   // Kiểm tra kết nối trực tiếp đến máy chủ Google Gemini
@@ -232,7 +229,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     setTestResult(null);
                   }}
                   className={`w-full bg-slate-950 border rounded-xl pl-3.5 pr-10 py-2.5 text-xs text-white placeholder-slate-500 font-mono outline-none transition ${
-                    validateKeyFormat(apiKeyInput).status === 'valid'
+                    testResult?.success
+                      ? 'border-emerald-500/80 focus:border-emerald-400 ring-1 ring-emerald-500/30'
+                      : testResult && !testResult.success
+                      ? 'border-rose-500/80 focus:border-rose-400'
+                      : validateKeyFormat(apiKeyInput).status === 'valid'
                       ? 'border-emerald-500/60 focus:border-emerald-400'
                       : validateKeyFormat(apiKeyInput).status === 'empty'
                       ? 'border-slate-800 focus:border-cyan-500'
@@ -276,8 +277,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </button>
             </div>
 
-            {/* Thông báo kiểm tra định dạng thời gian thực */}
-            {(() => {
+            {/* Thông báo kiểm tra định dạng thời gian thực (ẩn đi khi đã có kết quả test) */}
+            {!testResult && (() => {
               const formatInfo = validateKeyFormat(apiKeyInput);
               return (
                 <div className="flex items-center gap-1.5 text-[11px] pt-0.5">
