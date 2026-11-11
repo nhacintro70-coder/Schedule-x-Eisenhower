@@ -1,0 +1,61 @@
+========================================================================
+  HƯỚNG DẪN CẤU TRÚC CODE DỰ ÁN REACT CHUYÊN NGHIỆP (SCHEDULE WEB)
+========================================================================
+
+Thư mục này là TOÀN BỘ DỰ ÁN MÃ NGUỒN REACT CHUYÊN NGHIỆP.
+Code đã được phân chia theo kiến trúc module bài bản, giúp dễ đọc, dễ hiểu
+và cực kỳ dễ sửa bug hoặc phát triển tính năng mới.
+
+------------------------------------------------------------------------
+1. CÁCH CHẠY REAL-TIME KHI SỬA CODE (HOT RELOAD):
+------------------------------------------------------------------------
+- Click đúp vào file "1_Chay_Realtime_Dev.bat".
+- Trình duyệt sẽ mở địa chỉ: http://localhost:5173
+- Khi bạn mở file trong thư mục "src" để sửa code (đổi chữ, đổi màu, sửa tính năng),
+  trình duyệt sẽ TỰ ĐỘNG CẬP NHẬT REAL-TIME ngay tức thì mà không cần F5!
+
+------------------------------------------------------------------------
+2. CÁCH MỞ NHANH BẢN ĐÃ ĐÓNG GÓI SẴN:
+------------------------------------------------------------------------
+- Click đúp vào file "2_Mo_Ban_Chay_Nhanh.bat" để mở trực tiếp file dist/index.html.
+
+------------------------------------------------------------------------
+3. SƠ ĐỒ CẤU TRÚC THƯ MỤC "src" & NƠI SỬA BUG:
+------------------------------------------------------------------------
+src/
+├── types/
+│   └── index.ts                 -> Nơi định nghĩa cấu trúc dữ liệu (Task, Schedule, Quadrant, v.v.)
+│
+├── constants/
+│   ├── initialData.ts           -> Dữ liệu mẫu ban đầu, các câu lệnh AI gợi ý
+│   └── quadrantConfig.ts        -> Cấu hình màu sắc, icon, tiêu đề của 4 góc Eisenhower (P1, P2, P3, P4)
+│
+├── utils/
+│   ├── dateUtils.ts             -> Xử lý ngày giờ tiếng Việt & logic đồng hồ đếm ngược hạn 11:00
+│   └── styleUtils.ts            -> Style màu sắc cho nhãn dán công việc
+│
+├── services/
+│   ├── firebase.ts              -> Logic đồng bộ đám mây Cloud Firestore thời gian thực
+│   └── gemini.ts                -> Logic gọi Gemini AI API & thiết lập prompt điều phối lịch
+│
+├── components/                  -> CÁC THÀNH PHẦN GIAO DIỆN CHIA NHỎ:
+│   ├── Header.tsx               -> Thanh đầu trang: Đồng hồ LIVE, tiến độ %, nút thao tác
+│   ├── UrgentAlertBanner.tsx    -> Banner báo động đỏ deadline P1 STEEP 11h
+│   ├── AiCommandBar.tsx         -> Khung nhập lệnh AI thông minh & nút bấm mẫu
+│   ├── ManualAddTaskForm.tsx    -> Form nhập công việc thủ công
+│   ├── SettingsModal.tsx        -> Hộp thoại cài đặt API Key & Sao lưu/Khôi phục JSON
+│   │
+│   ├── EisenhowerMatrix/        -> [MA TRẬN EISENHOWER]
+│   │   ├── index.tsx            -> Lưới 2x2 & quản lý kéo thả
+│   │   ├── QuadrantColumn.tsx   -> Từng ô ưu tiên (Làm ngay, Lên lịch, Xử lý nhanh, Để sau)
+│   │   └── TaskCard.tsx         -> Từng thẻ công việc (checkbox, sửa trực tiếp, kéo thả, xóa)
+│   │
+│   └── TimelineSchedule/        -> [THỜI KHÓA BIỂU THEO GIỜ]
+│       ├── index.tsx            -> Danh sách khung giờ & chuyển tab Hôm nay / Ngày mai
+│       ├── ScheduleSlotItem.tsx -> Từng mục giờ chi tiết
+│       └── AddSlotForm.tsx      -> Form thêm giờ mới
+│
+├── App.tsx                      -> File điều phối chính (kết nối tất cả component lại với nhau)
+├── main.tsx                     -> Điểm gắn kết React vào DOM
+└── index.css                    -> CSS Tailwind nền tảng
+========================================================================
