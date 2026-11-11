@@ -7,16 +7,11 @@ import {
   AlertCircle,
   ExternalLink,
   Download,
-  Loader2,
-  HelpCircle,
-  ChevronDown,
-  ChevronUp,
-  Key
+  Loader2
 } from 'lucide-react';
 import { ScheduleData, DateInfo } from '../types';
 import {
-  getStoredGoogleClientId,
-  saveStoredGoogleClientId,
+  DEFAULT_GOOGLE_CLIENT_ID,
   requestGoogleAccessToken,
   syncSlotsToGoogleCalendarApi,
   exportScheduleToIcsFile
@@ -33,10 +28,8 @@ export const GoogleCalendarModal: React.FC<GoogleCalendarModalProps> = ({
   dateInfo,
   onClose
 }) => {
-  const [clientId, setClientId] = useState(() => getStoredGoogleClientId());
   const [targetDay, setTargetDay] = useState<'today' | 'tomorrow' | 'both'>('today');
   const [includeRoutines, setIncludeRoutines] = useState(false);
-  const [showGuide, setShowGuide] = useState(false);
 
   // Trạng thái đồng bộ
   const [isSyncing, setIsSyncing] = useState(false);
@@ -46,24 +39,14 @@ export const GoogleCalendarModal: React.FC<GoogleCalendarModalProps> = ({
 
   const isFileProtocol = window.location.protocol === 'file:';
 
-  const handleSaveClientId = () => {
-    saveStoredGoogleClientId(clientId);
-  };
-
   const handleStartSync = async () => {
-    if (!clientId.trim()) {
-      setErrorMessage('Vui lòng nhập Google OAuth Client ID trước khi đồng bộ.');
-      return;
-    }
-
-    saveStoredGoogleClientId(clientId);
     setErrorMessage(null);
     setSyncResult(null);
     setIsSyncing(true);
 
     try {
-      // 1. Lấy Access Token từ Google OAuth Popup
-      const accessToken = await requestGoogleAccessToken(clientId.trim());
+      // 1. Lấy Access Token từ Google OAuth Popup (sử dụng Client ID nhúng sẵn)
+      const accessToken = await requestGoogleAccessToken(DEFAULT_GOOGLE_CLIENT_ID);
 
       // 2. Thu thập danh sách slots cần đồng bộ
       let slotsToSync: Array<{ slot: any; dateStr: string }> = [];
@@ -140,11 +123,8 @@ export const GoogleCalendarModal: React.FC<GoogleCalendarModalProps> = ({
               <Calendar className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-white flex items-center gap-1.5">
-                <span>Đồng Bộ Google Calendar</span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">
-                  1-Click Direct
-                </span>
+              <h3 className="text-base font-bold text-white">
+                Đồng Bộ Google Calendar
               </h3>
               <p className="text-xs text-slate-400">Tự động đẩy toàn bộ lịch trình vào tài khoản Google của bạn</p>
             </div>
@@ -170,65 +150,8 @@ export const GoogleCalendarModal: React.FC<GoogleCalendarModalProps> = ({
           </div>
         )}
 
-        {/* Nhập Client ID */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <label className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
-              <Key className="w-3.5 h-3.5 text-blue-400" />
-              <span>Google OAuth Client ID:</span>
-            </label>
-            <button
-              type="button"
-              onClick={() => setShowGuide(!showGuide)}
-              className="text-xs text-blue-400 hover:text-blue-300 inline-flex items-center gap-1 cursor-pointer"
-            >
-              <HelpCircle className="w-3.5 h-3.5" />
-              <span>{showGuide ? 'Ẩn hướng dẫn' : 'Cách lấy mã miễn phí (2p)'}</span>
-              {showGuide ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-            </button>
-          </div>
-
-          <div className="flex gap-2">
-            <input
-              type="text"
-              placeholder="xxxx-xxxxxxxx.apps.googleusercontent.com"
-              value={clientId}
-              onChange={(e) => setClientId(e.target.value)}
-              onBlur={handleSaveClientId}
-              className="flex-1 bg-slate-950 border border-slate-800 focus:border-blue-500 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 font-mono outline-none"
-            />
-          </div>
-
-          {/* Hướng dẫn chi tiết */}
-          {showGuide && (
-            <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 text-[11px] text-slate-300 space-y-2 animate-in fade-in duration-150">
-              <p className="font-bold text-blue-300">3 bước tạo Google Client ID miễn phí:</p>
-              <ol className="list-decimal list-inside space-y-1 text-slate-400">
-                <li>
-                  Truy cập{' '}
-                  <a
-                    href="https://console.cloud.google.com/apis/credentials"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-blue-400 underline inline-flex items-center gap-0.5"
-                  >
-                    Google Cloud Console <ExternalLink className="w-2.5 h-2.5" />
-                  </a>{' '}
-                  và tạo 1 Project mới.
-                </li>
-                <li>
-                  Bật thư viện <strong>Google Calendar API</strong> trong mục <em>APIs & Services &gt; Library</em>.
-                </li>
-                <li>
-                  Vào <em>Credentials &gt; Create Credentials &gt; OAuth client ID</em> (chọn Web Application) và copy mã <strong>Client ID</strong> dán vào đây.
-                </li>
-              </ol>
-            </div>
-          )}
-        </div>
-
         {/* Tùy chọn phạm vi đồng bộ */}
-        <div className="space-y-3 pt-2 border-t border-slate-800">
+        <div className="space-y-3">
           <p className="text-xs font-semibold text-slate-200">Chọn lịch trình muốn đồng bộ:</p>
           <div className="grid grid-cols-3 gap-2">
             <button
@@ -343,7 +266,7 @@ export const GoogleCalendarModal: React.FC<GoogleCalendarModalProps> = ({
             ) : (
               <>
                 <Sparkles className="w-4 h-4" />
-                <span>Đồng bộ 1-Click vào Google Calendar</span>
+                <span>Đồng bộ vào Google Calendar</span>
               </>
             )}
           </button>
@@ -362,7 +285,7 @@ export const GoogleCalendarModal: React.FC<GoogleCalendarModalProps> = ({
             className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl font-semibold text-xs bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white transition cursor-pointer"
           >
             <Download className="w-3.5 h-3.5 text-blue-400" />
-            <span>Xuất file .ics (Nhập nhanh cho Google Calendar không cần cài đặt)</span>
+            <span>Xuất file .ics cho Google Calendar</span>
           </button>
         </div>
       </div>
