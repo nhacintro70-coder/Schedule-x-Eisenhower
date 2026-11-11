@@ -12,7 +12,13 @@ import {
   Trash2,
   RotateCcw,
   Coffee,
-  Calendar
+  Calendar,
+  Eye,
+  EyeOff,
+  CheckCircle2,
+  AlertTriangle,
+  Loader2,
+  Wifi
 } from 'lucide-react';
 import { Task, ScheduleData, RoutineSettings } from '../types';
 import { normalizeTimeString } from '../utils/timeUtils';
@@ -47,10 +53,60 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 }) => {
   const [nameInput, setNameInput] = useState(userName);
   const [apiKeyInput, setApiKeyInput] = useState(customApiKey);
+  const [showKeyText, setShowKeyText] = useState(false);
+  const [isTestingKey, setIsTestingKey] = useState(false);
+  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
   const [savedToast, setSavedToast] = useState(false);
   const [showJsonImport, setShowJsonImport] = useState(false);
   const [jsonImportText, setJsonImportText] = useState('');
   const [importError, setImportError] = useState<string | null>(null);
+
+  // Kiểm tra định dạng Google Gemini API Key chuẩn
+  const validateKeyFormat = (key: string): { status: 'empty' | 'valid' | 'invalid_start' | 'invalid_length' | 'invalid_chars'; message: string } => {
+    const trimmed = key.trim();
+    if (!trimmed) {
+      return { status: 'empty', message: '💡 Key miễn phí lấy từ Google AI Studio, luôn có dạng AIzaSy... (dài đúng 39 ký tự).' };
+    }
+    if (!trimmed.startsWith('AIzaSy')) {
+      return { status: 'invalid_start', message: '❌ Sai định dạng! Gemini API Key luôn bắt đầu bằng cụm từ "AIzaSy".' };
+    }
+    if (trimmed.length < 39) {
+      return { status: 'invalid_length', message: `⚠️ Đang có ${trimmed.length}/39 ký tự (Key chuẩn dài đúng 39 ký tự, có thể bạn copy thiếu).` };
+    }
+    if (trimmed.length > 39) {
+      return { status: 'invalid_length', message: `⚠️ Đang có ${trimmed.length}/39 ký tự (Key chuẩn dài 39 ký tự, có thể bạn copy thừa khoảng trắng).` };
+    }
+    if (!/^[A-Za-z0-9_-]{39}$/.test(trimmed)) {
+      return { status: 'invalid_chars', message: '❌ Key chứa ký tự đặc biệt không hợp lệ.' };
+    }
+    return { status: 'valid', message: '✓ Đúng định dạng chuẩn Google Gemini API Key (AIzaSy..., 39 ký tự).' };
+  };
+
+  // Kiểm tra kết nối trực tiếp đến máy chủ Google Gemini
+  const handleTestKey = async () => {
+    const trimmed = apiKeyInput.trim();
+    if (!trimmed) {
+      setTestResult({ success: false, message: 'Vui lòng nhập API Key trước khi kiểm tra kết nối.' });
+      return;
+    }
+    setIsTestingKey(true);
+    setTestResult(null);
+
+    try {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${trimmed}`);
+      if (res.ok) {
+        setTestResult({ success: true, message: 'Key hợp lệ 100%! Đã kết nối thành công với Google Gemini AI.' });
+      } else {
+        const errJson = await res.json().catch(() => null);
+        const errMsg = errJson?.error?.message || `Lỗi HTTP ${res.status}`;
+        setTestResult({ success: false, message: `Key bị Google từ chối: ${errMsg}` });
+      }
+    } catch (err: any) {
+      setTestResult({ success: false, message: `Không thể kết nối đến máy chủ Google: ${err.message || err}` });
+    } finally {
+      setIsTestingKey(false);
+    }
+  };
 
   // Cấu hình nhịp sinh hoạt (tự động chuẩn hóa nếu có lỗi giờ đảo ngược cũ)
   const [showRoutines, setShowRoutines] = useState(routineSettings.showRoutinesOnSchedule);
@@ -147,8 +203,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             />
           </div>
 
-          {/* Ô nhập Gemini API Key */}
-          <div className="space-y-1.5">
+          {/* Ô nhập Gemini API Key & Kiểm tra tự động */}
+          <div className="space-y-2">
             <div className="flex items-center justify-between">
               <label className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
                 <Key className="w-3.5 h-3.5 text-amber-400" />
@@ -164,22 +220,106 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <ExternalLink className="w-3 h-3" />
               </a>
             </div>
+
             <div className="flex gap-2">
-              <input
-                type="password"
-                placeholder="AIzaSy... (Nếu muốn ra lệnh AI bằng giọng văn tự nhiên)"
-                value={apiKeyInput}
-                onChange={(e) => setApiKeyInput(e.target.value)}
-                className="flex-1 bg-slate-950 border border-slate-800 focus:border-cyan-500 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 outline-none"
-              />
+              <div className="relative flex-1">
+                <input
+                  type={showKeyText ? 'text' : 'password'}
+                  placeholder="AIzaSy... (dài đúng 39 ký tự)"
+                  value={apiKeyInput}
+                  onChange={(e) => {
+                    setApiKeyInput(e.target.value);
+                    setTestResult(null);
+                  }}
+                  className={`w-full bg-slate-950 border rounded-xl pl-3.5 pr-10 py-2.5 text-xs text-white placeholder-slate-500 font-mono outline-none transition ${
+                    validateKeyFormat(apiKeyInput).status === 'valid'
+                      ? 'border-emerald-500/60 focus:border-emerald-400'
+                      : validateKeyFormat(apiKeyInput).status === 'empty'
+                      ? 'border-slate-800 focus:border-cyan-500'
+                      : 'border-amber-500/60 focus:border-amber-400'
+                  }`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowKeyText(!showKeyText)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition cursor-pointer"
+                  title={showKeyText ? 'Ẩn key' : 'Hiện key để kiểm tra'}
+                >
+                  {showKeyText ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+
+              {/* Nút Kiểm tra kết nối trực tiếp với Google AI */}
               <button
+                type="button"
+                disabled={isTestingKey || !apiKeyInput.trim()}
+                onClick={handleTestKey}
+                className="px-3 py-2.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-200 border border-slate-700 hover:border-slate-600 text-xs font-semibold rounded-xl transition cursor-pointer flex items-center gap-1.5 flex-shrink-0"
+                title="Gửi thử lệnh ping để kiểm tra xem key có thực sự hoạt động trên Google không"
+              >
+                {isTestingKey ? (
+                  <Loader2 className="w-3.5 h-3.5 text-cyan-400 animate-spin" />
+                ) : (
+                  <Wifi className="w-3.5 h-3.5 text-cyan-400" />
+                )}
+                <span>{isTestingKey ? 'Đang test...' : 'Kiểm tra'}</span>
+              </button>
+
+              {/* Nút Lưu */}
+              <button
+                type="button"
                 onClick={handleSaveProfileAndKey}
-                className="px-4 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold rounded-xl transition cursor-pointer flex items-center gap-1.5"
+                className="px-4 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold rounded-xl transition cursor-pointer flex items-center gap-1.5 flex-shrink-0"
               >
                 {savedToast ? <Check className="w-4 h-4" /> : null}
                 <span>{savedToast ? 'Đã lưu!' : 'Lưu'}</span>
               </button>
             </div>
+
+            {/* Thông báo kiểm tra định dạng thời gian thực */}
+            {(() => {
+              const formatInfo = validateKeyFormat(apiKeyInput);
+              return (
+                <div className="flex items-center gap-1.5 text-[11px] pt-0.5">
+                  {formatInfo.status === 'valid' ? (
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+                  ) : formatInfo.status === 'empty' ? null : (
+                    <AlertTriangle className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
+                  )}
+                  <span
+                    className={
+                      formatInfo.status === 'valid'
+                        ? 'text-emerald-400 font-medium'
+                        : formatInfo.status === 'empty'
+                        ? 'text-slate-500'
+                        : formatInfo.status === 'invalid_start'
+                        ? 'text-rose-400 font-medium'
+                        : 'text-amber-300'
+                    }
+                  >
+                    {formatInfo.message}
+                  </span>
+                </div>
+              );
+            })()}
+
+            {/* Kết quả kiểm tra kết nối thực tế với máy chủ Google */}
+            {testResult && (
+              <div
+                className={`p-2.5 rounded-xl border text-xs flex items-center gap-2 animate-in fade-in duration-150 ${
+                  testResult.success
+                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                    : 'bg-rose-500/10 border-rose-500/30 text-rose-300'
+                }`}
+              >
+                {testResult.success ? (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                ) : (
+                  <AlertTriangle className="w-4 h-4 text-rose-400 flex-shrink-0" />
+                )}
+                <span>{testResult.message}</span>
+              </div>
+            )}
           </div>
 
           {/* Cài đặt Nhịp Sinh Hoạt (Ăn uống / Nghỉ ngơi) */}

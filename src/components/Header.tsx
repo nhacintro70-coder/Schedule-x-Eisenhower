@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Clock, Sparkles, HardDrive, FastForward, Settings, RotateCcw, Edit3, Check } from 'lucide-react';
+import { Clock, HardDrive, FastForward, Settings, RotateCcw, Edit3, Check } from 'lucide-react';
 import { DateInfo } from '../types';
 
 interface HeaderProps {
@@ -43,11 +43,6 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
             <Clock className="w-3.5 h-3.5 text-cyan-400" />
             <span>LIVE: {dateInfo.fullClock}</span>
-          </div>
-
-          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-purple-500/15 border border-purple-500/30 text-purple-300 text-xs font-medium">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Kẻ Bám Đuổi (Auto Rollover)</span>
           </div>
 
           {/* LocalStorage Offline Indicator */}
